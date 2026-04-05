@@ -1,55 +1,72 @@
-﻿// MainPage.xaml.cs
-using System.Timers;
-using Plugin.Maui.Audio; // 引入音频库的命名空间
+﻿using System.Timers;
+using Plugin.Maui.Audio;
 
 namespace MetronomeMaui;
 
 public partial class MainPage : ContentPage
 {
-    // 1. 将 audioManager 声明为类的私有字段，便于所有方法访问
     private readonly IAudioManager _audioManager;
-    private IAudioPlayer? _audioPlayer; // 音频播放器实例
+    private IAudioPlayer? _audioPlayerStrong; // 强拍播放器
+    private IAudioPlayer? _audioPlayerWeak;   // 弱拍播放器
     private readonly System.Timers.Timer _timer;
     private bool _isPlaying = false;
     private int _currentBpm = 120;
     private int _intervalMs = 500;
+    private int _currentBeat = 1; // 当前节拍位置 1~4
 
-    // 2. 通过构造函数注入 IAudioManager 服务
     public MainPage(IAudioManager audioManager)
     {
         InitializeComponent();
         _audioManager = audioManager;
-
-        // 加载音频文件 (确保 tick.mp3 位于 Resources\Raw 目录，且生成操作为 MauiAsset)
         LoadAudio();
 
-        // 初始化计时器
         _timer = new System.Timers.Timer(_intervalMs);
         _timer.Elapsed += OnTimerTick;
         _timer.AutoReset = true;
+
+        // 绑定 Entry 初始值
+        BpmEntry.Text = _currentBpm.ToString();
     }
 
-    // 异步加载音频文件，避免阻塞UI线程
     private async void LoadAudio()
     {
-        var audioStream = await FileSystem.OpenAppPackageFileAsync("tick.mp3");
-        using var memoryStream = new MemoryStream();
-        await audioStream.CopyToAsync(memoryStream);
-        memoryStream.Position = 0;
-        _audioPlayer = _audioManager.CreatePlayer(memoryStream);
-        _audioPlayer.Loop = false; // 确保不循环播放，由计时器控制节拍
+        // 加载强拍音频
+        var strongStream = await FileSystem.OpenAppPackageFileAsync("tick1.mp3");
+        _audioPlayerStrong = _audioManager.CreatePlayer(strongStream);
+        _audioPlayerStrong.Loop = false;
+
+        // 加载弱拍音频
+        var weakStream = await FileSystem.OpenAppPackageFileAsync("tick2.mp3");
+        _audioPlayerWeak = _audioManager.CreatePlayer(weakStream);
+        _audioPlayerWeak.Loop = false;
     }
 
-    // 滑块值改变时触发
+    // 手动输入 BPM 的回调（按回车后触发）
+    private void OnBpmEntryCompleted(object sender, EventArgs e)
+    {
+        if (int.TryParse(BpmEntry.Text, out int newBpm))
+        {
+            // 限制范围 40~208
+            newBpm = Math.Clamp(newBpm, 40, 208);
+            _currentBpm = newBpm;
+            BpmSlider.Value = newBpm;
+            UpdateBpmDisplay();
+        }
+        else
+        {
+            // 输入无效，恢复显示当前 BPM
+            BpmEntry.Text = _currentBpm.ToString();
+        }
+    }
+
     private void OnSliderValueChanged(object sender, ValueChangedEventArgs e)
     {
         _currentBpm = (int)e.NewValue;
-        BpmLabel.Text = $"{_currentBpm} BPM";
+        UpdateBpmDisplay();
         _intervalMs = (int)(60000.0 / _currentBpm);
 
         if (_isPlaying)
         {
-            // 如果正在播放，重启计时器以应用新间隔
             _timer.Stop();
             _timer.Interval = _intervalMs;
             _timer.Start();
@@ -60,18 +77,49 @@ public partial class MainPage : ContentPage
         }
     }
 
-    // 计时器的滴答事件
+    private void UpdateBpmDisplay()
+    {
+        BpmLabel.Text = $"{_currentBpm} BPM";
+        BpmEntry.Text = _currentBpm.ToString();
+    }
+
     private void OnTimerTick(object? sender, ElapsedEventArgs e)
     {
-        // 确保UI操作在主线程上执行
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            _audioPlayer?.Play();
-            FlashBpmLabel();
+            // 播放对应的音频
+            if (_currentBeat == 1)
+                _audioPlayerStrong?.Play();
+            else
+                _audioPlayerWeak?.Play();
+
+            // 点亮对应的节拍点
+            HighlightBeat(_currentBeat);
+
+            // 更新节拍计数器（1->2->3->4->1）
+            _currentBeat++;
+            if (_currentBeat > 4) _currentBeat = 1;
         });
     }
 
-    // 启动/停止按钮逻辑
+    // 高亮当前拍点，然后恢复
+    private async void HighlightBeat(int beat)
+    {
+        BoxView targetBeat = beat switch
+        {
+            1 => Beat1,
+            2 => Beat2,
+            3 => Beat3,
+            4 => Beat4,
+            _ => Beat1
+        };
+
+        // 改变颜色为绿色（或其他高亮色）
+        targetBeat.Color = Colors.Green;
+        await Task.Delay(50);
+        targetBeat.Color = Colors.LightGray;
+    }
+
     private void OnStartStopClicked(object sender, EventArgs e)
     {
         if (_isPlaying)
@@ -79,6 +127,10 @@ public partial class MainPage : ContentPage
             _timer.Stop();
             StartStopButton.Text = "▶️ 启动";
             _isPlaying = false;
+            // 停止时重置拍子计数器
+            _currentBeat = 1;
+            // 重置所有节拍点颜色
+            ResetBeatColors();
         }
         else
         {
@@ -89,15 +141,21 @@ public partial class MainPage : ContentPage
         }
     }
 
-    // 视觉反馈：让BPM标签闪烁一下
-    private async void FlashBpmLabel()
+    private void ResetBeatColors()
     {
-        if (!Dispatcher.IsDispatchRequired) return;
-        await Dispatcher.DispatchAsync(async () =>
-        {
-            BpmLabel.TextColor = Colors.Red;
-            await Task.Delay(50);
-            BpmLabel.TextColor = Colors.Black;
-        });
+        Beat1.Color = Colors.LightGray;
+        Beat2.Color = Colors.LightGray;
+        Beat3.Color = Colors.LightGray;
+        Beat4.Color = Colors.LightGray;
+    }
+
+    // 页面销毁时释放资源
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        _timer?.Stop();
+        _timer?.Dispose();
+        _audioPlayerStrong?.Dispose();
+        _audioPlayerWeak?.Dispose();
     }
 }

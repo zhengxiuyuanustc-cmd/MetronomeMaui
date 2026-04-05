@@ -3,19 +3,41 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MetronomeMaui.MainPage">
 
-    <VerticalStackLayout Spacing="25" Padding="30,0" VerticalOptions="Center">
-        <Label x:Name="BpmLabel" 
-               Text="120 BPM" 
-               FontSize="48" 
-               HorizontalOptions="Center" 
-               FontAttributes="Bold"/>
+    <VerticalStackLayout Spacing="20" Padding="30,20" VerticalOptions="Center">
 
+        <!-- BPM 显示与手动输入区域 -->
+        <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+            <Label x:Name="BpmLabel" 
+                   Text="120 BPM" 
+                   FontSize="48" 
+                   FontAttributes="Bold"
+                   VerticalOptions="Center"/>
+            <Entry x:Name="BpmEntry" 
+                   Placeholder="BPM" 
+                   Keyboard="Numeric" 
+                   WidthRequest="80" 
+                   FontSize="24"
+                   HorizontalTextAlignment="Center"
+                   ReturnType="Done"
+                   Completed="OnBpmEntryCompleted"/>
+        </HorizontalStackLayout>
+
+        <!-- 滑块 -->
         <Slider x:Name="BpmSlider" 
                 Minimum="40" 
                 Maximum="208" 
                 Value="120" 
                 ValueChanged="OnSliderValueChanged"/>
 
+        <!-- 可视化节拍点：四个水平圆点 -->
+        <HorizontalStackLayout Spacing="20" HorizontalOptions="Center">
+            <BoxView x:Name="Beat1" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
+            <BoxView x:Name="Beat2" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
+            <BoxView x:Name="Beat3" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
+            <BoxView x:Name="Beat4" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
+        </HorizontalStackLayout>
+
+        <!-- 启动/停止按钮 -->
         <Button x:Name="StartStopButton" 
                 Text="▶️ 启动" 
                 FontSize="24" 
@@ -23,5 +45,6 @@
                 HorizontalOptions="Center" 
                 WidthRequest="200" 
                 HeightRequest="60"/>
+
     </VerticalStackLayout>
 </ContentPage>
