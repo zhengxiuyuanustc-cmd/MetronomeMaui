@@ -3,48 +3,46 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="MetronomeMaui.MainPage">
 
-    <VerticalStackLayout Spacing="20" Padding="30,20" VerticalOptions="Center">
+    <ScrollView>
+        <VerticalStackLayout Spacing="15" Padding="20,20">
 
-        <!-- BPM 显示与手动输入区域 -->
-        <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
-            <Label x:Name="BpmLabel" 
-                   Text="120 BPM" 
-                   FontSize="48" 
-                   FontAttributes="Bold"
-                   VerticalOptions="Center"/>
-            <Entry x:Name="BpmEntry" 
-                   Placeholder="BPM" 
-                   Keyboard="Numeric" 
-                   WidthRequest="80" 
-                   FontSize="24"
-                   HorizontalTextAlignment="Center"
-                   ReturnType="Done"
-                   Completed="OnBpmEntryCompleted"/>
-        </HorizontalStackLayout>
+            <!-- 模式切换 -->
+            <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                <Label Text="简单模式" VerticalOptions="Center"/>
+                <Switch x:Name="ModeSwitch" IsToggled="False" Toggled="OnModeToggled"/>
+                <Label Text="强弱拍模式" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
 
-        <!-- 滑块 -->
-        <Slider x:Name="BpmSlider" 
-                Minimum="40" 
-                Maximum="208" 
-                Value="120" 
-                ValueChanged="OnSliderValueChanged"/>
+            <!-- BPM 显示与手动输入 -->
+            <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                <Label x:Name="BpmLabel" Text="120 BPM" FontSize="48" FontAttributes="Bold" VerticalOptions="Center"/>
+                <Entry x:Name="BpmEntry" Placeholder="BPM" Keyboard="Numeric" WidthRequest="80" FontSize="24"
+                       HorizontalTextAlignment="Center" ReturnType="Done" Completed="OnBpmEntryCompleted"/>
+            </HorizontalStackLayout>
 
-        <!-- 可视化节拍点：四个水平圆点 -->
-        <HorizontalStackLayout Spacing="20" HorizontalOptions="Center">
-            <BoxView x:Name="Beat1" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
-            <BoxView x:Name="Beat2" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
-            <BoxView x:Name="Beat3" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
-            <BoxView x:Name="Beat4" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
-        </HorizontalStackLayout>
+            <!-- BPM 滑块 -->
+            <Slider x:Name="BpmSlider" Minimum="40" Maximum="208" Value="120" 
+                    ValueChanged="OnSliderValueChanged" DragCompleted="OnSliderDragCompleted"/>
 
-        <!-- 启动/停止按钮 -->
-        <Button x:Name="StartStopButton" 
-                Text="▶️ 启动" 
-                FontSize="24" 
-                Clicked="OnStartStopClicked" 
-                HorizontalOptions="Center" 
-                WidthRequest="200" 
-                HeightRequest="60"/>
+            <!-- 常用BPM历史区域 -->
+            <Label Text="最近使用" FontSize="16" HorizontalOptions="Center"/>
+            <FlexLayout x:Name="HistoryBpmContainer" Wrap="Wrap" JustifyContent="Center" AlignItems="Center" 
+                        >
+                <!-- 动态生成的历史BPM按钮 -->
+            </FlexLayout>
 
-    </VerticalStackLayout>
+            <!-- 可视化节拍点 -->
+            <HorizontalStackLayout Spacing="20" HorizontalOptions="Center">
+                <BoxView x:Name="Beat1" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
+                <BoxView x:Name="Beat2" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
+                <BoxView x:Name="Beat3" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
+                <BoxView x:Name="Beat4" WidthRequest="30" HeightRequest="30" Color="LightGray"/>
+            </HorizontalStackLayout>
+
+            <!-- 启动/停止按钮 -->
+            <Button x:Name="StartStopButton" Text="▶️ 启动" Clicked="OnStartStopClicked" 
+                    HorizontalOptions="Center" WidthRequest="120"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>
